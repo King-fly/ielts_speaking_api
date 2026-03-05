@@ -69,6 +69,14 @@ def generate_dialogue_response(self, session_id: int, user_input: str, turn_numb
             difficulty=session.difficulty_level
         )
         
+        # 处理可能包含思考过程的响应
+        if isinstance(ai_response, str):
+            import re
+            # 提取思考过程后的内容
+            think_match = re.search(r'</think>(.*)', ai_response, re.DOTALL)
+            if think_match:
+                ai_response = think_match.group(1).strip()
+        
         # 创建用户回合记录
         user_turn = DialogueTurn(
             session_id=session_id,

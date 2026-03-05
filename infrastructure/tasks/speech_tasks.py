@@ -117,7 +117,27 @@ def evaluate_speech(self, recording_id: int, transcript: str):
         
         # 解析评估结果
         if isinstance(评估_result, str):
-            评估_data = json.loads(评估_result)
+            # 处理可能包含思考过程的响应
+            import re
+            # 提取JSON部分
+            json_match = re.search(r'\{[^\}]*\}', 评估_result)
+            if json_match:
+                json_str = json_match.group(0)
+                try:
+                    评估_data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    # 清理字符串并重新尝试提取JSON
+                    clean_str = 评估_result.replace('</think>', '').replace('', '')
+                    json_match = re.search(r'\{[^\}]*\}', clean_str)
+                    if json_match:
+                        try:
+                            评估_data = json.loads(json_match.group(0))
+                        except json.JSONDecodeError:
+                            return {"error": "Failed to parse assessment JSON"}
+                    else:
+                        return {"error": "No valid JSON found in assessment result"}
+            else:
+                return {"error": "No valid JSON found in assessment result"}
         else:
             评估_data = 评估_result
         

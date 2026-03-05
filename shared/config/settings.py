@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4"
     
+    # AI服务配置（本地LM Studio）
+    AI_BASE_URL: str = "http://192.168.31.26:1234/v1"
+    AI_MODEL: str = "qwen/qwen3.5-35b-a3b"
+    
     # 语音处理配置
     AUDIO_MAX_SIZE_MB: int = 10
     AUDIO_FORMATS: list = ["wav", "mp3", "m4a"]

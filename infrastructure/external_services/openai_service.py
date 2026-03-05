@@ -2,19 +2,19 @@
 OpenAI API集成服务
 """
 from typing import Optional, Dict, Any, List
-import openai
-from shared.config.settings import get_settings
+import requests
+import json
 
-settings = get_settings()
+from shared.config.settings import get_settings
 
 class OpenAIService:
     """OpenAI API服务封装"""
     
     def __init__(self):
         """初始化OpenAI服务"""
-        if settings.OPENAI_API_KEY:
-            openai.api_key = settings.OPENAI_API_KEY
-        self.model = settings.OPENAI_MODEL
+        settings = get_settings()
+        self.base_url = settings.AI_BASE_URL
+        self.model = settings.AI_MODEL
     
     def evaluate_speech_transcript(self, transcript: str, topic: str = None) -> Dict[str, Any]:
         """
@@ -57,17 +57,30 @@ class OpenAIService:
         """
         
         try:
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[
+            headers = {
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": "你是一位专业的雅思口语考官，精通雅思评分标准。"},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,  # 降低随机性，提高评估一致性
-                response_format={"type": "json_object"}
+                "temperature": 0.3,  # 降低随机性，提高评估一致性
+                "response_format": {"type": "text"}
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload
             )
             
-            return response['choices'][0]['message']['content']
+            if response.status_code == 200:
+                response_data = response.json()
+                return response_data['choices'][0]['message']['content']
+            else:
+                return {"error": f"API error: {response.status_code} - {response.text}"}
             
         except Exception as e:
             return {"error": str(e)}
@@ -103,17 +116,30 @@ class OpenAIService:
         """
         
         try:
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[
+            headers = {
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": "你是一位经验丰富的雅思口语考试命题专家。"},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
-                response_format={"type": "json_object"}
+                "temperature": 0.7,
+                "response_format": {"type": "text"}
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload
             )
             
-            return response['choices'][0]['message']['content']
+            if response.status_code == 200:
+                response_data = response.json()
+                return response_data['choices'][0]['message']['content']
+            else:
+                return {"error": f"API error: {response.status_code} - {response.text}"}
             
         except Exception as e:
             return {"error": str(e)}
@@ -158,16 +184,29 @@ class OpenAIService:
         """
         
         try:
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[
+            headers = {
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": "你是一位经验丰富的雅思口语考官，正在进行口语测试。"},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7
+                "temperature": 0.7
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload
             )
             
-            return response['choices'][0]['message']['content']
+            if response.status_code == 200:
+                response_data = response.json()
+                return response_data['choices'][0]['message']['content']
+            else:
+                return f"抱歉，我无法生成回应。错误：API error: {response.status_code} - {response.text}"
             
         except Exception as e:
             return f"抱歉，我无法生成回应。错误：{str(e)}"

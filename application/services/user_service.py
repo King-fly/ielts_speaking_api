@@ -73,7 +73,9 @@ class UserService:
         Returns:
             bool: 密码是否匹配
         """
-        return pwd_context.verify(plain_password, hashed_password)
+        # Bcrypt limitation: password cannot be longer than 72 bytes
+        truncated_password = plain_password[:72]
+        return pwd_context.verify(truncated_password, hashed_password)
     
     def get_password_hash(self, password: str) -> str:
         """
@@ -85,7 +87,9 @@ class UserService:
         Returns:
             str: 哈希密码
         """
-        return pwd_context.hash(password)
+        # Bcrypt limitation: password cannot be longer than 72 bytes
+        truncated_password = password[:72]
+        return pwd_context.hash(truncated_password)
     
     def get_user_by_username(self, username: str) -> Optional[User]:
         """

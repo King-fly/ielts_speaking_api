@@ -223,11 +223,37 @@ class PracticeService:
         # 使用OpenAI生成话题
         topic_data = self.openai_service.generate_ielts_topic(part_type, difficulty)
         
-        if isinstance(topic_data, str):
-            topic_data = json.loads(topic_data)
-        
-        if "error" in topic_data:
-            raise ValueError(f"Failed to generate topic: {topic_data['error']}")
+        # 处理响应
+        if isinstance(topic_data, dict):
+            if "error" in topic_data:
+                raise ValueError(f"Failed to generate topic: {topic_data['error']}")
+        elif isinstance(topic_data, str):
+            # 处理可能包含思考过程的响应
+            import re
+            # 提取JSON部分
+            json_match = re.search(r'\{[^\}]*\}', topic_data)
+            if json_match:
+                json_str = json_match.group(0)
+                try:
+                    topic_data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    # 如果JSON解析失败，尝试清理字符串
+                    # 移除可能的思考过程标记
+                    clean_str = topic_data.replace('<think>', '').replace('</think>', '')
+                    # 提取JSON部分
+                    json_match = re.search(r'\{[^\}]*\}', clean_str)
+                    if json_match:
+                        json_str = json_match.group(0)
+                        try:
+                            topic_data = json.loads(json_str)
+                        except json.JSONDecodeError:
+                            raise ValueError("Failed to parse topic data: Invalid JSON format")
+                    else:
+                        raise ValueError("Failed to parse topic data: No JSON found")
+            else:
+                raise ValueError("Failed to parse topic data: No JSON found")
+        else:
+            raise ValueError("Failed to generate topic: Invalid response format")
         
         # 创建话题记录
         topic = PracticeTopic(
