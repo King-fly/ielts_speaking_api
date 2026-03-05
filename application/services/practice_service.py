@@ -3,6 +3,7 @@
 """
 import os
 import json
+import re
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -229,29 +230,65 @@ class PracticeService:
                 raise ValueError(f"Failed to generate topic: {topic_data['error']}")
         elif isinstance(topic_data, str):
             # 处理可能包含思考过程的响应
-            import re
-            # 提取JSON部分
-            json_match = re.search(r'\{[^\}]*\}', topic_data)
-            if json_match:
-                json_str = json_match.group(0)
-                try:
-                    topic_data = json.loads(json_str)
-                except json.JSONDecodeError:
-                    # 如果JSON解析失败，尝试清理字符串
-                    # 移除可能的思考过程标记
-                    clean_str = topic_data.replace('<think>', '').replace('</think>', '')
-                    # 提取JSON部分
-                    json_match = re.search(r'\{[^\}]*\}', clean_str)
-                    if json_match:
-                        json_str = json_match.group(0)
-                        try:
-                            topic_data = json.loads(json_str)
-                        except json.JSONDecodeError:
-                            raise ValueError("Failed to parse topic data: Invalid JSON format")
-                    else:
-                        raise ValueError("Failed to parse topic data: No JSON found")
+            # 尝试找到JSON开始和结束位置
+            json_start = topic_data.find('{')
+            json_end = topic_data.rfind('}')
+            if json_start != -1 and json_end != -1 and json_end > json_start:
+                json_str = topic_data[json_start:json_end+1]
+                
+                # 尝试多种方法解析JSON
+                parsing_attempts = [
+                    # 1. 直接解析
+                    lambda s: json.loads(s),
+                    # 2. 清理空白并解析
+                    lambda s: json.loads(' '.join(s.split())),
+                    # 3. 修复常见格式问题
+                    lambda s: json.loads(
+                        s.replace('\n', ' ')
+                         .replace('\t', ' ')
+                         .replace('  ', ' ')
+                         .replace('" "', '"')
+                    ),
+                    # 4. 更复杂的修复
+                    lambda s: json.loads(
+                        re.sub(r'([\}\[\]\{])\s*([\}\[\]\{])', r'\1,\2', 
+                               re.sub(r'"\s*([\}:])', r'"\1', s)
+                        )
+                    )
+                ]
+                
+                for parse_func in parsing_attempts:
+                    try:
+                        topic_data = parse_func(json_str)
+                        break
+                    except json.JSONDecodeError:
+                        continue
+                else:
+                    # 所有尝试都失败了
+                    # 尝试手动构建话题数据
+                    # 提取标题
+                    title_match = re.search(r'title["\s:]*["\']([^"\']*?)["\']', json_str)
+                    title = title_match.group(1).strip() if title_match else "New Topic"
+                    # 提取描述
+                    desc_match = re.search(r'description["\s:]*["\']([^"\']*?)["\']', json_str, re.DOTALL)
+                    description = desc_match.group(1).strip() if desc_match else "Generated topic"
+                    # 构建简单的话题数据
+                    topic_data = {
+                        "title": title,
+                        "description": description,
+                        "questions": [],
+                        "part_type": part_type,
+                        "difficulty": difficulty
+                    }
             else:
-                raise ValueError("Failed to parse topic data: No JSON found")
+                # 如果没有找到JSON，创建一个默认话题
+                topic_data = {
+                    "title": "Default Topic",
+                    "description": "Generated topic",
+                    "questions": [],
+                    "part_type": part_type,
+                    "difficulty": difficulty
+                }
         else:
             raise ValueError("Failed to generate topic: Invalid response format")
         
