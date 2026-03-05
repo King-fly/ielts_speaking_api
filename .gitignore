@@ -1,0 +1,63 @@
+# Virtual environment
+.venv/
+env/
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database files
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Log files
+*.log
+logs/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package files
+*.egg-info/
+dist/
+build/
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis
+redis-*.log
+
+# OpenAI API keys and other secrets
+*.key
+*.secret
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
